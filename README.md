@@ -13,7 +13,7 @@ report; a central dashboard polls every site and aggregates the results.
 ## Installation
 
 ```sh
-composer require zeixcom/craft-monitoring
+composer require zeixcom/craftmonitoring
 ./craft plugin/install craft-monitoring
 ```
 
@@ -145,7 +145,7 @@ that only bump `systemInfoUpdatedAt` are ignored.
 
 If you previously ran this as a copied Yii module:
 
-1. `composer require zeixcom/craft-monitoring` and `./craft plugin/install craft-monitoring`.
+1. `composer require zeixcom/craftmonitoring` and `./craft plugin/install craft-monitoring`.
 2. Remove the module from `config/app.php` (`modules` + `bootstrap` entries) and
    delete `modules/craftmonitoring/`.
 3. Rename `config/monitoring.php` → `config/craft-monitoring.php` (the plugin

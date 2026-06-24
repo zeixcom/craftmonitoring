@@ -3,7 +3,7 @@
 All notable changes to this project are documented in this file, following
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
-## 1.0.0 - Unreleased
+## 1.0.0 - 2026-06-24
 
 ### Added
 

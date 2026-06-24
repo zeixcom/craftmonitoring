@@ -1,5 +1,5 @@
 {
-  "name": "zeixcom/craft-monitoring",
+  "name": "zeixcom/craftmonitoring",
   "description": "Token-protected JSON endpoint exposing Craft version, plugin, environment, health and available-update info for an external monitoring dashboard.",
   "type": "craft-plugin",
   "license": "mit",
