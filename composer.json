@@ -1,0 +1,40 @@
+{
+  "name": "zeixcom/craft-monitoring",
+  "description": "Token-protected JSON endpoint exposing Craft version, plugin, environment, health and available-update info for an external monitoring dashboard.",
+  "type": "craft-plugin",
+  "license": "mit",
+  "keywords": [
+    "craft",
+    "cms",
+    "craftcms",
+    "craft-plugin",
+    "monitoring"
+  ],
+  "support": {
+    "issues": "https://github.com/zeixcom/craftmonitoring/issues",
+    "source": "https://github.com/zeixcom/craftmonitoring"
+  },
+  "require": {
+    "php": ">=8.2",
+    "craftcms/cms": "^5.8.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "zeixcom\\craftmonitoring\\": "src/"
+    }
+  },
+  "extra": {
+    "handle": "craft-monitoring",
+    "name": "Monitoring",
+    "developer": "Zeix AG",
+    "developerUrl": "https://zeix.com",
+    "documentationUrl": "https://github.com/zeixcom/craftmonitoring/blob/main/README.md",
+    "class": "zeixcom\\craftmonitoring\\Monitoring"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  }
+}
