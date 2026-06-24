@@ -11,15 +11,10 @@ use craft\web\UrlManager;
 use yii\base\Event;
 
 /**
- * Monitoring plugin.
+ * Token-protected JSON system report for an external monitoring dashboard.
  *
- * Exposes a token-protected JSON endpoint with information about the Craft
- * installation (versions, plugins, environment, health, available updates) so
- * an external dashboard can keep an overview of all your sites.
- *
- * The endpoint is mounted on the CP URL manager, so it sits behind any IP
- * allowlist, basic-auth, or WAF rule scoped to the CP host instead of being
- * exposed on the public site.
+ * Mounted on the CP URL manager so the endpoint inherits any IP allowlist,
+ * basic-auth, or WAF rule scoped to the CP host.
  *
  * @method static Monitoring getInstance()
  */
@@ -42,16 +37,12 @@ class Monitoring extends Plugin
         );
     }
 
-    /**
-     * Returns the configured client secret, or null if it is missing or shorter
-     * than the minimum length. The controller treats null as "endpoint not
-     * configured" and responds 404.
-     */
     public function getClientSecret(): ?string
     {
         $config = Craft::$app->getConfig()->getConfigFromFile('craft-monitoring');
         $secret = is_array($config) ? ($config['clientSecret'] ?? null) : null;
 
+        // null (missing or too short) is treated as "not configured" → 404.
         if (!is_string($secret) || strlen($secret) < self::MIN_SECRET_LENGTH) {
             return null;
         }

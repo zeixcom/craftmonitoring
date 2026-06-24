@@ -15,40 +15,22 @@ use zeixcom\craftmonitoring\Monitoring;
 use zeixcom\craftmonitoring\services\SystemUpdateTracker;
 
 /**
- * Monitoring API controller.
- *
- * Provides a token-protected JSON system report so an external dashboard can
- * keep tabs on Craft versions, installed plugins, the environment, etc.
+ * Token-protected JSON system report for an external monitoring dashboard.
  *
  * Endpoint: POST <cpTrigger>/monitoring/api/system-report
- *
- * Authentication accepts the secret in any of these places (first match wins):
- *   - JSON body field:           {"clientSecret": "..."}
- *   - POST parameter:            clientSecret=...
- *   - HTTP header:               X-Client-Secret: ...
- *   - Authorization bearer:      Authorization: Bearer ...
- *
- * The URL query string is intentionally NOT accepted — secrets in URLs leak
- * into webserver and CDN logs, browser history, and Referer headers.
+ * Auth: shared secret via JSON body, X-Client-Secret header, or Bearer token —
+ * never the query string, which leaks into logs, history, and Referer headers.
  */
 class ApiController extends Controller
 {
-    /**
-     * @var array<string, int>|int|bool Anonymous access — auth is handled via the client secret.
-     * Permitted while the system is live OR offline so monitoring still works during maintenance.
-     */
+    // Auth is the client secret; allow live + offline so monitoring survives maintenance mode.
     protected array|int|bool $allowAnonymous = [
         'system-report' => self::ALLOW_ANONYMOUS_LIVE | self::ALLOW_ANONYMOUS_OFFLINE,
     ];
 
-    /**
-     * @var bool API endpoint — disable CSRF so external dashboards can call it.
-     */
+    // Token API, not a session endpoint.
     public $enableCsrfValidation = false;
 
-    /**
-     * Returns a JSON report describing this Craft installation.
-     */
     public function actionSystemReport(): Response
     {
         $this->requirePostRequest();
@@ -70,7 +52,7 @@ class ApiController extends Controller
 
         $response = $this->asJson($data);
 
-        // Never let an upstream proxy/CDN serve a stale monitoring snapshot.
+        // No proxy/CDN should ever serve a stale monitoring snapshot.
         $response->getHeaders()
             ->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->set('Pragma', 'no-cache');
@@ -78,19 +60,14 @@ class ApiController extends Controller
         return $response;
     }
 
-    /**
-     * Both "not configured" and "bad secret" return the same 404 so an
-     * unauthenticated caller cannot tell the endpoint from a missing route.
-     */
     private function ensureAuthenticated(): void
     {
         $expected = Monitoring::getInstance()->getClientSecret();
 
+        // Same 404 whether unconfigured or wrong secret, so the endpoint is
+        // indistinguishable from a missing route. Reasons are logged, not returned.
         if ($expected === null) {
-            Yii::warning(
-                'Monitoring endpoint called but client secret is missing or below minimum length.',
-                __METHOD__
-            );
+            Yii::warning('Monitoring endpoint called but client secret is missing or below minimum length.', __METHOD__);
             throw new NotFoundHttpException();
         }
 
@@ -102,10 +79,6 @@ class ApiController extends Controller
         }
     }
 
-    /**
-     * Pulls the secret from POST body or auth headers. The URL query string
-     * is intentionally not accepted (see class-level note).
-     */
     private function extractProvidedSecret(): ?string
     {
         $request = Craft::$app->getRequest();
@@ -125,11 +98,10 @@ class ApiController extends Controller
 
     private function craftInfo(): array
     {
-        $app = Craft::$app;
         $info = null;
 
         try {
-            $info = $app->getInfo();
+            $info = Craft::$app->getInfo();
         } catch (Throwable) {
             // Craft may not be fully installed yet — fall through with nulls.
         }
@@ -162,9 +134,6 @@ class ApiController extends Controller
         ];
     }
 
-    /**
-     * Only report a curated list of common extensions to avoid noisy output.
-     */
     private function keyExtensions(): array
     {
         $watch = ['gd', 'imagick', 'pdo_mysql', 'pdo_pgsql', 'intl', 'mbstring', 'curl', 'openssl', 'zip', 'redis', 'apcu', 'opcache'];
@@ -213,21 +182,15 @@ class ApiController extends Controller
         ];
     }
 
-    /**
-     * Available-update status. Reads Craft's *cached* update info only — never
-     * triggers an outbound call to the update server on the monitoring request.
-     * `infoCached` is false when Craft hasn't checked recently, in which case
-     * `available`/`criticalAvailable` are 0/false rather than current.
-     */
+    // Cached update info only — never triggers an outbound call on the request.
+    // infoCached === false means the counts are stale (0/false), not current.
     private function updatesInfo(): array
     {
         $updates = Craft::$app->getUpdates();
 
         try {
-            $cached = $updates->getIsUpdateInfoCached();
-
             return [
-                'infoCached' => $cached,
+                'infoCached' => $updates->getIsUpdateInfoCached(),
                 'available' => $updates->getTotalAvailableUpdates(),
                 'criticalAvailable' => $updates->getIsCriticalUpdateAvailable(),
                 'migrationsPending' => $updates->getAreMigrationsPending(),
@@ -242,10 +205,7 @@ class ApiController extends Controller
         }
     }
 
-    /**
-     * Operational health signals. Each is wrapped so one failing probe never
-     * takes down the whole report.
-     */
+    // Each probe is null-guarded so one failure can't sink the whole report.
     private function healthInfo(): array
     {
         return [
@@ -273,15 +233,11 @@ class ApiController extends Controller
         }
     }
 
-    /**
-     * Returns a list of installed plugins with version and edition info.
-     */
     private function pluginsInfo(): array
     {
         $plugins = [];
         $pluginsService = Craft::$app->getPlugins();
 
-        // Active / loaded plugins
         foreach ($pluginsService->getAllPlugins() as $allPlugin) {
             $handle = $allPlugin->id;
             $stored = $pluginsService->getStoredPluginInfo($handle);
@@ -301,10 +257,9 @@ class ApiController extends Controller
             ];
         }
 
-        // Also include installed-but-disabled plugins so the dashboard sees them
+        // Installed-but-disabled plugins too, so the dashboard still sees them.
         try {
-            $all = $pluginsService->getAllPluginInfo();
-            foreach ($all as $handle => $info) {
+            foreach ($pluginsService->getAllPluginInfo() as $handle => $info) {
                 if (isset($plugins[$handle])) {
                     $plugins[$handle]['isEnabled'] = (bool) ($info['isEnabled'] ?? true);
                     continue;
@@ -325,7 +280,7 @@ class ApiController extends Controller
                 ];
             }
         } catch (Throwable) {
-            // getAllPluginInfo() may throw very early; the enabled list above is enough.
+            // getAllPluginInfo() can throw very early; the enabled list above is enough.
         }
 
         ksort($plugins);
@@ -333,9 +288,6 @@ class ApiController extends Controller
         return array_values($plugins);
     }
 
-    /**
-     * Returns the list of registered Yii modules (handles only — no secrets).
-     */
     private function modulesInfo(): array
     {
         $ids = array_keys(Craft::$app->getModules());

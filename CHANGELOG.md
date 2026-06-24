@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, following
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## 1.0.1 - 2026-06-24
+
+### Changed
+
+- Trimmed inline comments to terse rationale-only (no functional change).
+
 ## 1.0.0 - 2026-06-24
 
 ### Added
