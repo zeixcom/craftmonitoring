@@ -9,6 +9,7 @@ use craft\db\Query;
 use craft\db\Table;
 use craft\helpers\FileHelper;
 use DateTimeImmutable;
+use DateTimeZone;
 use JsonException;
 use Throwable;
 
@@ -39,13 +40,23 @@ class SystemUpdateTracker
             return $this->laterOf($storedAt, $migrationAt);
         }
 
-        $newAt = ($migrationAt !== null && ($storedAt === null || strtotime($migrationAt) > strtotime($storedAt)))
-            ? $migrationAt
-            : (new DateTimeImmutable())->format(DATE_ATOM);
+        // A version change without a newer migration (plugin upgrades often ship none) falls
+        // back to craft_info.dateUpdated — stamping "now" would record when this endpoint was
+        // polled, not when the update happened.
+        $newAt = $this->laterOf($storedAt, $this->laterOf($migrationAt, $this->systemInfoUpdatedAt()));
 
         $this->writeState($fingerprint, $newAt);
 
         return $newAt;
+    }
+
+    private function systemInfoUpdatedAt(): ?string
+    {
+        try {
+            return Craft::$app->getInfo()->dateUpdated?->format(DATE_ATOM);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function lastUpdateFromMigrations(): ?string
@@ -70,7 +81,9 @@ class SystemUpdateTracker
         }
 
         try {
-            return (new DateTimeImmutable($applyTime))->format(DATE_ATOM);
+            // Craft stores applyTime as a naive UTC string; without the explicit zone PHP
+            // would read it in the server's default timezone.
+            return (new DateTimeImmutable($applyTime, new DateTimeZone('UTC')))->format(DATE_ATOM);
         } catch (Throwable) {
             return null;
         }

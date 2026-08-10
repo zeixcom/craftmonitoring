@@ -123,6 +123,25 @@ Any health/update field is `null` if its probe threw.
 `storage/runtime/monitoring/last-system-update.json`. Project config applies
 that only bump `systemInfoUpdatedAt` are ignored.
 
+When the fingerprint changes but no migration is newer — a plugin upgrade that
+ships no migrations, or a deploy landing before migrations run — the value falls
+back to `systemInfoUpdatedAt` instead of the time the endpoint was polled. It is
+a high-water mark: repeated calls never move it, and uninstalling a plugin
+(which deletes its migration rows) can't push it backwards.
+
+Both fields are ISO 8601 with a real offset. Migration times are read as UTC
+regardless of the server's PHP timezone.
+
+> Before 1.1.0, `lastSystemOrPluginUpdateAt` was stamped with the request time on
+> any fingerprint change, and migration times were parsed in the server's default
+> timezone. Dashboards talking to older installs should prefer
+> `systemInfoUpdatedAt`.
+>
+> Because the value is a high-water mark, a wrong timestamp written by an older
+> version survives the upgrade. Delete
+> `storage/runtime/monitoring/last-system-update.json` once on affected installs
+> to re-derive it.
+
 ## Security posture
 
 - **Timing-safe comparison** via `hash_equals()`.
