@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, following
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## 1.1.1 - 2026-08-28
+
+### Fixed
+
+- Plugin now declares a settings model, so Craft no longer logs a warning on every request.
+
 ## 1.1.0 - 2026-08-10
 
 ### Fixed

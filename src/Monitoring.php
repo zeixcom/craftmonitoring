@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace zeixcom\craftmonitoring;
 
 use Craft;
+use craft\base\Model;
 use craft\base\Plugin;
 use craft\events\RegisterUrlRulesEvent;
 use craft\web\UrlManager;
 use yii\base\Event;
+use zeixcom\craftmonitoring\models\Settings;
 
 /**
  * Token-protected JSON system report for an external monitoring dashboard.
@@ -35,6 +37,11 @@ class Monitoring extends Plugin
                 $event->rules['POST monitoring/api/system-report'] = 'craft-monitoring/api/system-report';
             }
         );
+    }
+
+    public function createSettingsModel(): ?Model
+    {
+        return new Settings();
     }
 
     public function getClientSecret(): ?string
