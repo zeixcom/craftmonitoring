@@ -91,12 +91,14 @@ on any breaking change to the payload shape. The body contains `reportVersion`,
 
 ### `updates`
 
-Reads Craft's **cached** update info only — the monitoring request never makes
-an outbound call to the update server.
+Reads Craft's cached update info. If the cache is empty, the request first asks
+the Craft update server once (Craft caches the result for 24 hours, or for
+5 minutes if the check fails). Without this, a site where no admin opens the
+control panel would never report updates.
 
 | Field               | Meaning                                                                       |
 | ------------------- | ----------------------------------------------------------------------------- |
-| `infoCached`        | `false` ⇒ Craft hasn't checked recently; the counts below are stale (0/false) |
+| `infoCached`        | `false` ⇒ the update check failed; the counts below are stale (0/false)       |
 | `available`         | Total available updates (Craft + plugins)                                     |
 | `criticalAvailable` | A critical/security update is available                                       |
 | `migrationsPending` | Code was updated but migrations haven't run                                   |

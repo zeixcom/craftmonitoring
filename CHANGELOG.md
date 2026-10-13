@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file, following
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- The report now runs Craft's update check when no update info is cached. Before, update info was only cached when an admin opened the control panel, so sites without CP traffic always reported `infoCached: false`.
+- `infoCached` is now `false` when the cached update check failed. Craft caches a failed check as an empty result, which was reported as "0 updates available".
+
 ## 1.1.1 - 2026-08-28
 
 ### Fixed

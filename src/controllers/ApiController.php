@@ -182,15 +182,20 @@ class ApiController extends Controller
         ];
     }
 
-    // Cached update info only — never triggers an outbound call on the request.
+    // Craft only checks for updates when an admin opens the CP, so sites nobody
+    // logs into would never report. getUpdates() calls the update server only
+    // when the cache is empty (cached 24h on success, 5min on failure).
     // infoCached === false means the counts are stale (0/false), not current.
     private function updatesInfo(): array
     {
         $updates = Craft::$app->getUpdates();
 
         try {
+            $updates->getUpdates();
+
             return [
-                'infoCached' => $updates->getIsUpdateInfoCached(),
+                // A failed check is cached as [] — that's "unknown", not "up to date".
+                'infoCached' => !empty(Craft::$app->getCache()->get($updates->cacheKey)),
                 'available' => $updates->getTotalAvailableUpdates(),
                 'criticalAvailable' => $updates->getIsCriticalUpdateAvailable(),
                 'migrationsPending' => $updates->getAreMigrationsPending(),
